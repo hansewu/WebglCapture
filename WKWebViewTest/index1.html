@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        html {
+            overflow: hidden;
+        }
+        iframe {
+            position:absolute;
+            top: 20px;
+            right: 20px;s
+        }
+    </style>
+</head>
+<body>
+<!--<iframe src="https://ghbtns.com/github-btn.html?user=zengxiangliang&repo=three_text&type=star&count=true" allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20" style="position: absolute;top:20px;right:150px;"></iframe>-->
+<!--<iframe src="https://ghbtns.com/github-btn.html?user=zengxiangliang&repo=three_text&type=fork&count=true" allowtransparency="true" frameborder="0" scrolling="0" width="110" height="20" style="position: absolute;top:20px;right:40px;"></iframe>-->
+<script type="text/javascript" src="three.min.js"></script>
+<script type="text/javascript" src="Tween.js"></script>
+<script type="text/javascript" src="helvetiker_bold.typeface.json"></script>
+<script>
+window.onerror = function(err)
+{
+    //log('window.onerror: ' + err)
+}
+
+function setupWebViewJavascriptBridge(callback)
+{
+    if (window.WebViewJavascriptBridge) { return callback(WebViewJavascriptBridge); }
+    if (window.WVJBCallbacks) { return window.WVJBCallbacks.push(callback); }
+    window.WVJBCallbacks = [callback];
+    var WVJBIframe = document.createElement('iframe');
+    WVJBIframe.style.display = 'none';
+    WVJBIframe.src = 'https://__bridge_loaded__';
+    document.documentElement.appendChild(WVJBIframe);
+    setTimeout(function() { document.documentElement.removeChild(WVJBIframe) }, 0)
+}
+
+function arrayBufferToString(buffer)
+{
+      var binary = '';
+      //var bytes = new Uint8Array(buffer);
+      var len = buffer.byteLength;
+      for (var i = 0; i < len; i++)
+      {
+          binary += String.fromCharCode(buffer[i]);
+      }
+      return window.btoa(binary);//binary;//
+  }
+
+setupWebViewJavascriptBridge(
+function(bridge)
+{
+    var uniqueId = 1
+    function log(message, data)
+    {
+//        var log = document.getElementById('log')
+//       var el = document.createElement('div')
+//        el.className = 'logLine'
+//        el.innerHTML = uniqueId++ + '. ' + message + ':<br/>' + JSON.stringify(data)
+//        if (log.children.length) { log.insertBefore(el, log.children[0]) }
+//        else { log.appendChild(el) }
+    }
+
+    bridge.registerHandler('testJavascriptHandler', function(data, responseCallback)
+    {
+        //log('ObjC called testJavascriptHandler with', data)
+        //var responseData = { 'Javascript Says':'Right back atcha!' }
+        //log('JS responding with', responseData)
+        responseCallback(arrayBufferToString(buffer))
+    })
+
+})
+</script>
+<script>
+    const RT_SIZE = 512;
+    const buffer = new Uint8Array(4 * RT_SIZE * RT_SIZE);
+    
+    var scene, camera, renderer, RenderTarget;
+    var ww = RT_SIZE;//window.innerWidth;
+    var wh = RT_SIZE; //window.innerHeight;
+    var aspect = ww / wh;
+    function initThree()
+    {
+        // 创建场景
+        scene = new THREE.Scene();
+        // 创建相机
+        camera = new THREE.PerspectiveCamera(70, aspect, 1, 2000);
+        camera.position.set(0, 0, 100);
+        // 创建渲染器（WebGL渲染器）
+        renderer = new THREE.WebGLRenderer({antialias: true});
+        renderer.setClearColor(0x000000, 1);
+        renderer.setSize(ww, wh);
+        document.body.appendChild(renderer.domElement);
+
+        createPointLight();
+        createDireLight();
+        
+        RenderTarget = new THREE.WebGLRenderTarget( RT_SIZE, RT_SIZE);
+    }
+    // 创建点光源 需要照亮场景
+    function createPointLight()
+    {
+        var light = new THREE.PointLight(0xffe502, 1, 1000);
+        light.position.set(50, 50, 50);
+        scene.add(light);
+    }
+
+    // 创建方向光 金属感强烈
+    function createDireLight()
+    {
+        var direLight = new THREE.DirectionalLight(0xffe502, 1000);
+        direLight.position.set(0, 500, 0);
+        direLight.castShadow = true;
+        scene.add(direLight);
+    }
+
+    // 执行动画
+    function animate()
+    {
+        TWEEN.update();
+        renderer.render(scene, camera);
+        renderer.render(scene, camera, RenderTarget);
+        renderer.readRenderTargetPixels(RenderTarget, 0, 0, RT_SIZE, RT_SIZE, buffer);
+        requestAnimationFrame(animate)
+    }
+
+
+    // 创建文字
+    function createText()
+    {
+        //json = JSON.parse( objectest );
+        var text = new THREE.Font( objecttest );
+        //var text = new THREE.FontLoader().load("helvetiker_bold.typeface.json", function(text) //THREE.
+        {
+            var gem = new THREE.TextGeometry('51JOB',
+            {
+                size: 20, //字号大小，一般为大写字母的高度
+                height: 10, //文字的厚度
+                weight: 'normal', //值为'normal'或'bold'，表示是否加粗
+                font: text, //字体，默认是'helvetiker'，需对应引用的字体文件
+                style: 'normal', //值为'normal'或'italics'，表示是否斜体
+                bevelThickness: 1, //倒角厚度
+                bevelSize: 1, //倒角宽度
+                curveSegments: 30,//弧线分段数，使得文字的曲线更加光滑
+                bevelEnabled: true, //布尔值，是否使用倒角，意为在边缘处斜切
+            });
+            gem.center();
+            var mat = new THREE.MeshPhongMaterial({
+                color: 0xffe502,
+                specular: 0x009900,
+                shininess: 30,
+                shading: THREE.FlatShading
+            });
+            var textObj = new THREE.Mesh(gem, mat);
+            textObj.castShadow = true;
+            scene.add(textObj);
+            new TWEEN.Tween(textObj.rotation).to({y: Math.PI * 2}, 2000).repeat(Infinity).yoyo(true).start();
+        } //); //THREE.FontLoader().load
+    }
+    // start
+    function threeStart()
+    {
+        initThree();
+        createText();
+        animate();
+    }
+    // resize
+<!--    function onResize()-->
+<!--    {-->
+<!--        ww = window.innerWidth;-->
+<!--        wh = window.innerHeight;-->
+<!---->
+<!--        camera.aspect = ww / wh;-->
+<!--        camera.updateProjectionMatrix();-->
+<!--        renderer.setSize(ww, wh);-->
+<!--    }-->
+    window.addEventListener('load', threeStart, false);
+ //   window.addEventListener('resize', onResize, false);
+    console.log('test update');
+</script>
+</body>
+</html>
